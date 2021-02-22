@@ -1,30 +1,5 @@
-from build_simulation import *
-from matplotlib import pyplot as plt
-import seaborn as sns
-import time
-import math
-import datetime as dt
-from timetables import *
-from joblib import Parallel, delayed
 from def_run_simulation_experiment import *
-from get_params import *
-
-# 1:  "Schleswig-Holstein",
-# 2:  "Hamburg",
-# 3:  "Lower Saxony",
-# 4:  "Bremen",
-# 5:  "North-Rhine-Westfalia",
-# 6:  "Hessen",
-# 7:  "Rheinland-Pfalz",
-# 8:  "Baden-Wuerttemberg",
-# 9:  "Bavaria",
-# 10: "Saarland",
-# 11: "Berlin",
-# 12: "Brandenburg",
-# 13: "Mecklenburg-Vorpommern",
-# 14: "Saxony",
-# 15: "Saxony-Anhalt",
-# 16: "Thuringia",
+from def_get_params import *
 
 spotpy_params = get_spotpy_params("important_outputs/params/LHS_BW_2021_01_20.csv")
 

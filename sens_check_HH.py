@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jan 13 20:26:16 2021
-
-@author: ac135963
-"""
 
 from def_sens_check import *
 

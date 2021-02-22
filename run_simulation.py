@@ -4,29 +4,6 @@ from Sim import *
 from timetables import *
 from def_get_params import *
 
-import time
-import math
-import datetime as dt
-
-
-# 1:  "Schleswig-Holstein",
-# 2:  "Hamburg",
-# 3:  "Lower Saxony",
-# 4:  "Bremen",
-# 5:  "North-Rhine-Westfalia",
-# 6:  "Hessen",
-# 7:  "Rheinland-Pfalz",
-# 8:  "Baden-Wuerttemberg",
-# 9:  "Bavaria",
-# 10: "Saarland",
-# 11: "Berlin",
-# 12: "Brandenburg",
-# 13: "Mecklenburg-Vorpommern",
-# 14: "Saxony",
-# 15: "Saxony-Anhalt",
-# 16: "Thuringia",
-
-
 params_hh = get_spotpy_params("important_outputs/params/LHS_BW_2021_01_20.csv")
 
 STATE = 8

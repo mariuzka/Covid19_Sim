@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Feb 16 13:24:31 2021
-
-@author: ac135963
-"""
 
 from get_params import *
 from def_run_simulation_parallel import *
