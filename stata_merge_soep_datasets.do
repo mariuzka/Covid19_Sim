@@ -1,23 +1,21 @@
 set more off
-chdir "C:\Users\ac135963\Nextcloud\SOEP\soep.v34\stata_de+en"
 
-
-*use "raw/phrf.dta", replace
+*use "soep.v34\stata_de+en\raw\phrf.dta", replace
 
 ********************************************************************************
 
-use "bioagel.dta", replace
+use "soep.v34\stata_de+en\bioagel.dta", replace
 
 sort pid syear
 by pid syear:  gen dup = cond(_N==1,0,_n)
 
 drop if dup == 2
 
-save "C:\Users\ac135963\Nextcloud\Projekte\CORONA_PROJEKT\CORONA\data\soep für abm\bioagel_no_dups.dta", replace
+save "data\soep für abm\bioagel_no_dups.dta", replace
 
 ********************************************************************************
 
-use "pl.dta", replace
+use "soep.v34\stata_de+en\pl.dta", replace
 
 rename plb0096 homeoffice_n
 rename plb0183_h work_hours_day
@@ -41,7 +39,7 @@ rename plg0015_h stipendium
 
 keep pid hid syear stipendium erwerbsstatus homeoffice_n work_hours_day work_hours_week n_friends health go_out freq_visits_family freq_church hours_shopping
 
-save "C:\Users\ac135963\Nextcloud\Projekte\CORONA_PROJEKT\CORONA\data\soep für abm\pl_small.dta", replace
+save "data\soep für abm\pl_small.dta", replace
 
 ********************************************************************************
 
@@ -59,49 +57,48 @@ keep pid hid age gender syear federal_state industry1 industry2 work_hours_year
 
 ********************************************************************************
 
-merge 1:1 syear pid using "biopupil.dta"
+merge 1:1 syear pid using "soep.v34\stata_de+en\biopupil.dta"
 drop _merge
 
 ********************************************************************************
 
-merge 1:1 syear pid using "C:\Users\ac135963\Nextcloud\Projekte\CORONA_PROJEKT\CORONA\data\soep für abm\bioagel_no_dups.dta"
+merge 1:1 syear pid using "data\soep für abm\bioagel_no_dups.dta"
 drop _merge
 
 ********************************************************************************
 
-merge 1:1 syear pid using "C:\Users\ac135963\Nextcloud\Projekte\CORONA_PROJEKT\CORONA\data\soep für abm\pl_small.dta"
+merge 1:1 syear pid using "data\soep für abm\pl_small.dta"
 drop _merge
 
 ********************************************************************************
 
-merge 1:1 syear pid using "C:\Users\ac135963\Nextcloud\SOEP\soep.v34\stata_de+en\kidlong.dta"
+merge 1:1 syear pid using "soep.v34\stata_de+en\kidlong.dta"
 drop _merge
 
 ********************************************************************************
 
-merge 1:1 syear pid using "C:\Users\ac135963\Nextcloud\SOEP\soep.v34\stata_de+en\pgen.dta"
+merge 1:1 syear pid using "soep.v34\stata_de+en\pgen.dta"
 drop _merge
 
 ********************************************************************************
 
-merge m:1 syear pid using "C:\Users\ac135963\Nextcloud\SOEP\soep.v34\stata_de+en\raw\bhp.dta"
+merge m:1 syear pid using "soep.v34\stata_de+en\raw\bhp.dta"
 drop _merge
 
 ********************************************************************************
 
-merge m:1 hid using "C:\Users\ac135963\Nextcloud\SOEP\soep.v34\stata_de+en\raw\hhrf.dta"
+merge m:1 hid using "soep.v34\stata_de+en\raw\hhrf.dta"
 drop _merge
 
 ********************************************************************************
 
 keep if syear == 2017
 
-save "C:\Users\ac135963\Nextcloud\Projekte\CORONA_PROJEKT\CORONA\data\soep für abm\merged_soep_datasets.dta", replace
+save "data\soep für abm\merged_soep_datasets.dta", replace
 
-********************************************************************************
 
-* chdir "C:\Users\ac135963\Nextcloud\Projekte\CORONA\data\soep für abm"
-* use "merged_soep_datasets.dta" , replace
+
+
 
 
 

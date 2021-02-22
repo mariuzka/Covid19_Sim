@@ -1,4 +1,4 @@
-chdir "C:\Users\ac135963\Nextcloud\Projekte\CORONA_PROJEKT\CORONA\data\soep für abm"
+*chdir "..."
 use "merged_soep_datasets.dta" , replace
 set more off
 
@@ -101,4 +101,4 @@ tab household_data_is_complete
 keep if household_data_is_complete
 
 * save dataset
-export delimited using "C:\Users\ac135963\Nextcloud\Projekte\CORONA_PROJEKT\CORONA\data\soep für abm\soep_for_corona_simulation.csv", nolabel quote replace
+* export delimited using "data\soep für abm\soep_for_corona_simulation.csv", nolabel quote replace
