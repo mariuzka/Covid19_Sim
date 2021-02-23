@@ -1,0 +1,1 @@
+The processed SOEP data is saved in this folder after the stata-do files have been executed.

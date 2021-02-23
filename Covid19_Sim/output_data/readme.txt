@@ -1,0 +1,1 @@
+The simulation saves the outputdata in this folder.
