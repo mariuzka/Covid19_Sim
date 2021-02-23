@@ -1,9 +1,0 @@
-mpi4py
-spotpy
-matplotlib
-pandas
-scipy
-xlrd
-pygame
-openpyxl
-joblib
