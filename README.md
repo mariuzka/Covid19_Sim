@@ -1,4 +1,4 @@
-note: the documentation of this repository is still under 
+Note: The documentation of this repository is still under developement
 
 ## Instructions
 
