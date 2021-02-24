@@ -3,9 +3,9 @@ Note: The documentation of this repository is still under developement
 ## Instructions
 
 ### Preparations
-1. Pull this repository.
+1. Download this repository.
 2. Install all packages named in "requirements.txt"
-3. Get the SOEP 2017 and replace the empty folder "Covid19_Sim/data/soep.v34" by the original folder "soep.v34" provided with the SOEP.
+3. Get the SOEP 2017 and replace the empty folder "Covid19_Sim/data/soep.v34" with the original folder "soep.v34" that comes with the SOEP 2017.
 
 ### Run the simulation experiment
 The simulation experiment compares the effectivness of several NPIs in certain federal states of Germany.
