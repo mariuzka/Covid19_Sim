@@ -14,9 +14,9 @@ from Cell import *
 
 ########################################################################################################################
 
-class Corona_Agent(
-    Agent,
-):
+class Corona_Agent(Agent):
+    
+    
     max_agents_on_cell = int
     moving_prob = float
 
@@ -339,8 +339,8 @@ class Building:
                          for cell in grid_as_flat_list
                          if cell.cell_type == "street"]
         
-        #building_ground = random.choice(vacant_ground)
-        building_ground = vacant_ground[0]
+        building_ground = random.choice(vacant_ground)
+        # building_ground = vacant_ground[0]
         
         self.build_it(
             building_ground.x_grid_pos, 

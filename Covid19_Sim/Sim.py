@@ -88,7 +88,7 @@ class Sim:
         self.nace2_short_reduction_of_workhours = nace2_short_reduction_of_workhours
         
         # load soep-data 
-        soep = pd.read_csv("data/soep für abm/soep_for_corona_simulation.csv")
+        soep = pd.read_csv("data/soep4sim/soep_for_corona_simulation.csv")
         self.soep = soep[soep["federal_state"] == state]
         
         # average number of possible contacts / colleagues at work
@@ -279,7 +279,21 @@ class Sim:
         self.start_datetime = start_date 
         
         # Date of the last day in the simulation
-        self.end_datetime = end_date      
+        self.end_datetime = end_date
+    
+    
+    def build_n_buildings_of_a_certain_type_random_on_screen(
+            self, 
+            building_type, 
+            n,
+            world,
+            ):
+        for i in range(n):
+            building = Building(building_type)
+            building.build_it_on_random_position(
+                world.grid_as_flat_list,
+                world.grid_as_matrix,
+                )
         
 
     def run(self, params):
@@ -287,34 +301,45 @@ class Sim:
         """
         This method runs the simulation model.
         
-        INPUT:
-            list of parameter values
-            
-            params = [
-                infection probability per hour (float),
-                number of initial infections (int),
-                number of agents (int),
-                number of randomly infected agents per day (float or int),
-                timetable of measures (dict),
-                number of ticks until the household of symptomatic agents will be isolated (int),
-                number of repetitions of the model run until the average result is calculated (int),
-                name of the run (str),
-                save output on disk? (bool),
-                display simulation? (bool),
-                ]
+        INPUT
+        list of parameter values
+        
+        params = [
+            infection probability per hour (float),
+            number of initial infections (int),
+            number of agents (int),
+            number of randomly infected agents per day (float or int),
+            timetable of measures (dict),
+            number of ticks until the household of symptomatic agents will be isolated (int),
+            number of repetitions of the model run until the average result is calculated (int),
+            name of the run (str),
+            save output on disk? (bool),
+            display simulation? (bool),
+            ]
+        
+        OUTPUT
+        output_dict: dictionary which contains 3 datasets
+            df: main output dataframe
+            calibration_data: list containg only the cumulative number of infections per day
+            age_distributions: list of lists containing the age of all infected agents per internal run
         
         """
         
         start_time = time.time()
         
-        
         # unpack list of parameters
         infection_prob, n_initial_infections, n, n_random_infections, timetable, n_ticks_to_quarantine, n_internal_runs, name_of_run, save_output, display_simulation = params
+        
+        assert 0 <= infection_prob <= 1
+        assert n_initial_infections <= n
+        assert type(timetable) == dict
+        assert type(name_of_run) == str
+        assert type(save_output) == bool
+        assert type(display_simulation) == bool
         
         # create name of output file
         output_file_name = "output " + str(dt.datetime.now()).replace(":","-").replace(".","-") + ".csv"
         
-    
         # Infection probabilities for each location type.
         # At the moment, the same probability applies to all locations.
         location_dependend_infection_prob_dict = {
@@ -477,6 +502,11 @@ class Sim:
             timetable,
             display_simulation,
         ):
+        
+        """
+        This method runs the simulation internally. 
+        For each model repetition, this method is executed one time by the method "run()".
+        """
     
         # create world
         world = World(self.grid_x_len, self.grid_y_len)
@@ -487,73 +517,63 @@ class Sim:
     
         families = agent_population_in_households
         
-        #######################################################################
-    
-        # Funktion zum Häuser bauen
-        def build_n_buildings_of_a_certain_type_random_on_screen(
-                building_type, 
-                n,
-                ):
-            
-            for i in range(n):
-                building = Building(building_type)
-                building.build_it_on_random_position(
-                    world.grid_as_flat_list,
-                    world.grid_as_matrix,
-                    )
 
         #######################################################################
         # build locations
         #######################################################################
     
-        # Supermärkte bauen
-        build_n_buildings_of_a_certain_type_random_on_screen(
+        # build supermarkets
+        self.build_n_buildings_of_a_certain_type_random_on_screen(
             "supermarket", 
             n_supermarkets,
+            world,
         )
         
-        # Schulen bauen
-        build_n_buildings_of_a_certain_type_random_on_screen(
+        # build schools
+        self.build_n_buildings_of_a_certain_type_random_on_screen(
             "school", 
             n_schools,
+            world,
         )
     
-        
-        # build kindergartens
-        build_n_buildings_of_a_certain_type_random_on_screen(
+        # build kindergartens (at the moment these are in fact kindergarten groups)
+        self.build_n_buildings_of_a_certain_type_random_on_screen(
             "kindergarten",
             n_kindergartens,
+            world,
         )
         
-        
-        
         # build universities
-        build_n_buildings_of_a_certain_type_random_on_screen(
+        self.build_n_buildings_of_a_certain_type_random_on_screen(
             "university",
             n_universities,
+            world,
         )
         
         # build one firm for each nace2   
         for nace2 in n_nace2.index:
             if nace2 != "-1":
                 # Firmen bauen
-                build_n_buildings_of_a_certain_type_random_on_screen(
+                self.build_n_buildings_of_a_certain_type_random_on_screen(
                     "firm" + str(nace2),
                     1,
+                    world,
                 )
         
+        # find all cells without buildings
         vacant_ground = [cell
                          for cell in world.grid_as_flat_list
                          if cell.cell_type == "street"]
         
-        # Wohnhäuser bauen
-        build_n_buildings_of_a_certain_type_random_on_screen(
+        # build houses/homes
+        self.build_n_buildings_of_a_certain_type_random_on_screen(
                 "home", 
-                len(vacant_ground),         
+                len(vacant_ground),
+                world,
         )
     
         #######################################################################
-        # Wohnhäuser zuweisen und Agenten in Wohnhäuser einziehen lassen
+        # assign agents to homes
         #######################################################################
         
         # Alle gebauten Wohnhäuser heraussuchen
@@ -601,10 +621,8 @@ class Sim:
                 # add each agent to the world's population list
                 world.agents["agents"].append(agent)
                 
-    
-    
         #######################################################################
-        # Supermärkte zuweisen
+        # assign supermarkets to agents
         #######################################################################
         
         # Alle gebauten Supermärkte heraussuchen
@@ -618,9 +636,9 @@ class Sim:
             for i in range(self.n_fav_supermarkets):
                 agent.fav_supermarkets.append(random.choice(list_of_supermarkets))
             
-        
+            
         #######################################################################
-        # Schulen zuweisen
+        # assign schools/classes to agents
         #######################################################################
 
         # Alle gebauten Schulen heraussuchen
@@ -662,7 +680,7 @@ class Sim:
     
     
         #######################################################################
-        # Kitas zuweisen
+        # assign kindergartens
         #######################################################################
         
         """
@@ -689,12 +707,8 @@ class Sim:
                 # assign
                 agent.group_dict.update({"kindergarten": 0})
     
-    
-        
-        
-        
         #######################################################################
-        # Arbeitsstellen zuweisen
+        # assign work places
         #######################################################################
     
         for agent in world.agents["agents"]:
@@ -722,8 +736,6 @@ class Sim:
         for firm in all_firms:
             # Anzahl der Abteilungen berechnen und einspeichern
             firm.n_groups = max(firm.n_users // self.n_colleagues, 1)
-        
-       
     
         # für jeden Agenten
         for agent in world.agents["agents"]:
@@ -736,9 +748,8 @@ class Sim:
                     {agent.work_place.cell_type: random.choice(range(agent.work_place.n_groups))}
                     )
                            
-                
         #######################################################################
-        # Uni zuweisen
+        # assign universities
         #######################################################################
         
         list_of_universities = [cell 
@@ -750,7 +761,6 @@ class Sim:
             if agent.student == 1:
                 agent.university = random.choice(list_of_universities)
                 agent.group_dict.update({"university": 0})
-        
         
         #######################################################################
         # infection characteristics
@@ -794,8 +804,6 @@ class Sim:
                 agent.p_sym = self.p_sym["70-79"]
             elif agent.age >= 80:
                 agent.p_sym = self.p_sym["80+"]
-        
-        
         
         
         #######################################################################
@@ -1201,7 +1209,7 @@ class Sim:
                     buildings,
                     "cell_type",
                     CELL_TYPE_COLORS,
-                    draw_outline=False,
+                    draw_outline=True,
                 )
                 # draw street
                 gui.draw_population_with_immutable_color(
@@ -1210,16 +1218,6 @@ class Sim:
                     draw_outline=False,
                     outline_color="dim gray",
                 )
-    
-                # draw traffic flow
-                if gui.draw_traffic == 1:
-                    gui.draw_population_with_dynamic_color(
-                            street,
-                            "cumulative_number_of_residents",
-                            0,
-                            max([cell.cumulative_number_of_residents for cell in street]) / gui.traffic_contrast,
-                            draw_outline = False,
-                            )
     
                 # draw agents
                 gui.draw_population_with_categorial_attributes(
@@ -1241,15 +1239,14 @@ class Sim:
                 infection_states = [agent.infection for agent in world.agents["agents"]]
                 
                 SIR_data = {
-                    
-                "s" : infection_states.count("s"),
-                "e" : infection_states.count("e"),
-                "i" : infection_states.count("i"),
-                "a" : infection_states.count("a"),
-                "m" : infection_states.count("m"),
-                "r" : infection_states.count("r"),
-                "q" : sum([agent.quarantine for agent in world.agents["agents"]])
-                }
+                    "s" : infection_states.count("s"),
+                    "e" : infection_states.count("e"),
+                    "i" : infection_states.count("i"),
+                    "a" : infection_states.count("a"),
+                    "m" : infection_states.count("m"),
+                    "r" : infection_states.count("r"),
+                    "q" : sum([agent.quarantine for agent in world.agents["agents"]])
+                    }
                 
                 gui.plot(
                     "Infection status",
@@ -1259,20 +1256,6 @@ class Sim:
                     line_colors=list(AGENT_COLORS.values()),
                 )
     
-                # plot location of infections
-                location_of_infections = [(agent.cell_of_infection.cell_type if not "firm" in agent.cell_of_infection.cell_type else "firm")
-                                          for agent in world.agents["agents"] 
-                                          if agent.cell_of_infection]
-                location_data = {
-                    "street": location_of_infections.count("street"),
-                    "home": location_of_infections.count("home"),
-                    "firm": location_of_infections.count("firm"),
-                    "supermarket":location_of_infections.count("supermarket"),
-                    "school": location_of_infections.count("school"),
-                    "kindergarten": location_of_infections.count("kindergarten"),
-                }
-    
-                
                 gui.plot(
                     "cumulative cases",
                     {"cases": cumulative_cases},
@@ -1301,8 +1284,11 @@ class Sim:
             pygame.quit()
         
         
-        age_of_infected_agents = [agent.age for agent in world.agents["agents"]
-                                  if agent.infection in ("e", "i", "m", "a", "r")]
+        age_of_infected_agents = [
+            agent.age 
+            for agent in world.agents["agents"]
+            if agent.infection in ("e", "i", "m", "a", "r")
+            ]
         
         output_dict = {
             "age_of_infected_agents": age_of_infected_agents,
@@ -1311,17 +1297,19 @@ class Sim:
         return output_dict
 
 
-    def create_soep_population(
-        self,
-        N,
-        agent_class,
-        unit = "agent",  
-    ):
+    def create_soep_population(self, N, agent_class):
+        """
+        This method creates the population of agents informed by the SOEP.
         
-        soep = self.soep
-        federal_state = self.state
+        INPUT
+        N: number of agents to be created (int)
+        agent_class: Agent-Class to be used (normally: Corona_Agent)
         
+        OUTPUT
+        households: List of lists (households) containing the agents
+        """
         
+        # all NACE codes
         nace2_codes = [
             1,2,3,5,6,7,8,9,
             10,11,12,13,14,15,16,17,18,19,
@@ -1336,14 +1324,24 @@ class Sim:
             ]
 
         # get unique household-IDs and corresponding weight
-        hids_and_weights = soep.drop_duplicates(subset=["hid"]).loc[:, ["hid", "bhhhrf"]]
+        hids_and_weights = self.soep.drop_duplicates(subset=["hid"]).loc[:, ["hid", "bhhhrf"]]
         
-        # create a weighted list of household-IDs
+        # list for storing all weighted household-ids
         weighted_hids = []
+        
+        # for each household
         for i in hids_and_weights.index:
+            
+            # get household id
             hid = hids_and_weights.loc[i, "hid"]
+            
+            # get houshold weight
             weight = int(hids_and_weights.loc[i, "bhhhrf"])
+            
+            # create a list containing the household id "weigth" times
             weighted_hid = [hid] * weight
+            
+            # add it to the list of all weighted household ids
             weighted_hids.extend(weighted_hid)
             
     
@@ -1360,7 +1358,7 @@ class Sim:
             hid = random.choice(weighted_hids)
     
             # get data of persons living in this household
-            household_data = soep[soep["hid"] == hid].reset_index()
+            household_data = self.soep[self.soep["hid"] == hid].reset_index()
             
             # list for storing agents created below
             household = []
@@ -1372,20 +1370,39 @@ class Sim:
                 agent = agent_class()
     
                 # copy attributes from soep to agent
-                agent.age = household_data.loc[i, "age"]
-                agent.gender = household_data.loc[i, "gender"]
-                #agent.pupil = household_data.loc[i, "pupil"]
                 
+                # age
+                agent.age = household_data.loc[i, "age"]
+                
+                # gender
+                agent.gender = household_data.loc[i, "gender"]
+                
+                # NACE2 code
                 nace2 = household_data.loc[i, "nace2"]
+                # if ambiguous (nace2<=0), choose a random nace2-category
                 agent.nace2 = (random.choice(nace2_codes) if nace2 <= 0 else nace2)
                 
+                # NACE2 section
                 nace2_short = household_data.loc[i, "nace2_short"]
-                agent.nace2_short = (random.randint(1, 21) if nace2 <= 0 else nace2_short) # if nace2 is ambiguous (nace2<=0), choose a random nace2-category
+                # if ambiguous (nace2<=0), choose a random nace2-short-category
+                agent.nace2_short = (random.randint(1, 21) if nace2 <= 0 else nace2_short) 
+                
+                # work hours
                 agent.work_hours_day_in_ticks = household_data.loc[i, "computed_work_hours_day"] * self.n_ticks_per_hour
+                
+                # shopping hours
                 agent.hours_at_supermarket_in_ticks = household_data.loc[i, "hours_shopping_mi"] * self.n_ticks_per_hour
+                
+                # student status
                 agent.student = household_data.loc[i, "student"]
+                
+                # household id
                 agent.hid = household_data.loc[i, "hid"]
+                
+                # personal id
                 agent.pid = household_data.loc[i, "pid"]
+                
+                # federal state
                 agent.federal_state = household_data.loc[i, "federal_state"]
                 
                 # append Agent to household-list
@@ -1395,10 +1412,7 @@ class Sim:
             households.append(household)
             
             # increase the number of already created instances
-            if unit == "household":
-                n += 1
-            elif unit == "agent":
-                n += len(household)
+            n += len(household)
         
         # return list of households
         return households
