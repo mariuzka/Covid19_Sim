@@ -15,3 +15,8 @@ To run the experiment execute one of the following files:
 - run_simulation_experiment_BY.py (Bavaria)
 - run_simulation_experiment_SL.py (Saarland)
 - run_simulation_experiment_HH.py (Hamburg)
+
+## Code
+The main python-files in which the main classes are defined are:
+- **Sim.py**: In this file the simulation model is definded. The main simulation procedure is defined here.
+- **Corona_Agent.py**: In this file classes for agents and locations in the simulated world are defined.
