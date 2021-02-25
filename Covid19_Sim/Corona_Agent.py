@@ -16,7 +16,6 @@ from Cell import *
 
 class Corona_Agent(Agent):
     
-    
     max_agents_on_cell = int
     moving_prob = float
 

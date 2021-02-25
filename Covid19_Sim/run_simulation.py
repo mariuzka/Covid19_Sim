@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from Sim import *
 from timetables import *
 from def_get_params import *

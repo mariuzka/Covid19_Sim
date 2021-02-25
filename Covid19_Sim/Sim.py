@@ -521,44 +521,36 @@ class Sim:
         #######################################################################
         # build locations
         #######################################################################
-    
+        
+        """
+        In this and the following sections, the locations of the simulated world are created. 
+        Each location is a cell on a grid, which itself can have several "rooms". 
+        An agent is assigned to a location and a room within the location. 
+        This design was once implemented to model realistic traffic flows, 
+        e.g. to have many agents travel to the same school but split into different classrooms. 
+        However, this version of the simulation does not model movement between places anyway, 
+        so this implementation does not really make sense. 
+        It is retained, however, in order to reintroduce movement flows if necessary.
+        
+        """
+        
         # build supermarkets
-        self.build_n_buildings_of_a_certain_type_random_on_screen(
-            "supermarket", 
-            n_supermarkets,
-            world,
-        )
+        self.build_n_buildings_of_a_certain_type_random_on_screen("supermarket", n_supermarkets, world)
         
         # build schools
-        self.build_n_buildings_of_a_certain_type_random_on_screen(
-            "school", 
-            n_schools,
-            world,
-        )
+        self.build_n_buildings_of_a_certain_type_random_on_screen("school", n_schools, world)
     
         # build kindergartens (at the moment these are in fact kindergarten groups)
-        self.build_n_buildings_of_a_certain_type_random_on_screen(
-            "kindergarten",
-            n_kindergartens,
-            world,
-        )
+        self.build_n_buildings_of_a_certain_type_random_on_screen("kindergarten", n_kindergartens, world)
         
         # build universities
-        self.build_n_buildings_of_a_certain_type_random_on_screen(
-            "university",
-            n_universities,
-            world,
-        )
+        self.build_n_buildings_of_a_certain_type_random_on_screen("university", n_universities, world)
         
-        # build one firm for each nace2   
+        # build one firm for each nace2-sector 
         for nace2 in n_nace2.index:
             if nace2 != "-1":
                 # Firmen bauen
-                self.build_n_buildings_of_a_certain_type_random_on_screen(
-                    "firm" + str(nace2),
-                    1,
-                    world,
-                )
+                self.build_n_buildings_of_a_certain_type_random_on_screen("firm" + str(nace2), 1, world)
         
         # find all cells without buildings
         vacant_ground = [cell
@@ -576,7 +568,7 @@ class Sim:
         # assign agents to homes
         #######################################################################
         
-        # Alle gebauten Wohnhäuser heraussuchen
+        # get all homes
         list_of_houses = [cell 
                           for cell in world.grid_as_flat_list
                           if cell.cell_type == "home"]
@@ -584,30 +576,30 @@ class Sim:
         # for each household
         for family in families:
             
-            # leere Wohnhäuser heraussuchen
+            # get empty homes
             list_of_vacant_houses = [cell 
                                      for cell in world.grid_as_flat_list
                                      if cell.cell_type == "home"
                                      and cell.n_groups == 0]
             
-            # wenn es noch komplett leere Häuse gibt
+            # if there are any empty homes
             if len(list_of_vacant_houses) > 0:
                 
-                # zufällig ein komplett leeres Haus heraussuchen
+                # randomly assign household to an empty home
                 house = random.choice(list_of_vacant_houses)
-                
+            
             else:
                 
-                # zufällig ein bereits bewohntes Haus aussuchen
+                # randomly assign household to a flat within a multi-family house
                 house = random.choice(list_of_houses)
             
-            # Wohnungsnummer aussuchen
+            # get flat id
             flat = house.n_groups
                 
-            # Gruppen/Wohnungs-Counter des Hauses erhöhen
+            # increase number of flats in the house
             house.n_groups += 1
                 
-            # für jeden Agenten aus Familie
+            # for each household, move in flat/house
             for agent in family:
                 agent.move_in(house)
                 agent.home_cell = house
@@ -625,11 +617,12 @@ class Sim:
         # assign supermarkets to agents
         #######################################################################
         
-        # Alle gebauten Supermärkte heraussuchen
+        # get all supermarkets
         list_of_supermarkets = [cell 
                                 for cell in world.grid_as_flat_list
                                 if cell.cell_type == "supermarket"]
         
+        # randomly assign supermarkets
         for agent in world.agents["agents"]:
             agent.group_dict.update({"supermarket": 0})
             agent.fav_supermarkets = []
@@ -641,50 +634,52 @@ class Sim:
         # assign schools/classes to agents
         #######################################################################
 
-        # Alle gebauten Schulen heraussuchen
+        # get all schools
         list_of_schools = [cell 
                            for cell in world.grid_as_flat_list
                            if cell.cell_type == "school"]
         
-        # für jeden Agenten
+        # for each pupil
         for agent in world.agents["agents"]:
-            
-            # wenn dieser im Schulalter ist
             if agent.age in self.school_age:
                 
                 # select random school
                 school = random.choice(list_of_schools)
-                
-                # Schule bei Agenten einspeichern
                 agent.school = school
                 
-                # Anzahl der Benutzer dieser Schule erhöhen
+                # increase number of pupils in this school
                 school.n_users += 1
     
     
-        # für jede Schule
+        # for each school
         for school in list_of_schools:
             
-            # Anzahl der Klassen berechnen und einspeichern
+            # calculate number of necessary classes
             school.n_groups = max(school.n_users // self.pupils_per_class, 1)
     
     
-        # für jeden Agenten
+        # for each agent
         for agent in world.agents["agents"]:
             
-            # wenn Schule zugewiesen
+            # if assigned to school 
             if agent.school:
                 
-                # Klasse zufällig zuweisen
+                # randomly assign to a class
                 agent.group_dict.update({"school": random.choice(range(agent.school.n_groups))})
-    
+        
+        # This process could be optimized.
+        
     
         #######################################################################
         # assign kindergartens
         #######################################################################
         
         """
-        A kindergarten is treated as a kindergarten group
+        One kindergarten building contains only one group/room.
+        Thus, a kindergarten is in fact only a kindergarten group.
+        This does not matter for the simulation results.
+        It would be relevant and should be changed, if the traffic flows
+        were modelled.
         """
         
         # select all built kindergartens
@@ -704,46 +699,47 @@ class Sim:
                 # save kindergarten as an agent property
                 agent.kindergarten = kindergarten
     
-                # assign
+                # assign kindergarten group
                 agent.group_dict.update({"kindergarten": 0})
     
         #######################################################################
         # assign work places
         #######################################################################
-    
+        
+        # get all workplaces
+        all_firms = [cell 
+                     for cell in world.grid_as_flat_list
+                     if "firm" in cell.cell_type ]
+        
+        # for each working agents
         for agent in world.agents["agents"]:
-            
             if agent.work_hours_day_in_ticks > 0:
             
-                # get all firms in nace2-category
+                # get all possible workplaces within the agent's nace2-sector
                 possible_work_places = [
                     cell 
-                    for cell in world.grid_as_flat_list
+                    for cell in all_firms
                     if cell.cell_type == "firm" + str(agent.nace2_short)
                     ]
-            
-                work_place = random.choice(possible_work_places)
                 
+                # choose a workplace
+                work_place = random.choice(possible_work_places)
                 agent.work_place = work_place
+                
+                # increase number of workers assigned to this workplace
                 work_place.n_users += 1
             
-            
-            all_firms = [cell 
-                         for cell in world.grid_as_flat_list
-                         if "firm" in cell.cell_type ]
-        
-        # für jede Firma
+                
+        # for each workplace
         for firm in all_firms:
-            # Anzahl der Abteilungen berechnen und einspeichern
+            # calculate number of divisions within work place
             firm.n_groups = max(firm.n_users // self.n_colleagues, 1)
     
-        # für jeden Agenten
+        # for each agent with a work place
         for agent in world.agents["agents"]:
-            
-            # wenn Arbeitsstelle zugewiesen
             if agent.work_place:
                
-                # Abteilung zufällig zuweisen
+                # randomly assign division with work place
                 agent.group_dict.update(
                     {agent.work_place.cell_type: random.choice(range(agent.work_place.n_groups))}
                     )
@@ -752,13 +748,16 @@ class Sim:
         # assign universities
         #######################################################################
         
+        # get all universities
         list_of_universities = [cell 
                                 for cell in world.grid_as_flat_list
                                 if cell.cell_type == "university"]
         
-        # für jeden Agenten
+        # for each agents
         for agent in world.agents["agents"]:
+            # if agent is student
             if agent.student == 1:
+                # randomly assign a university
                 agent.university = random.choice(list_of_universities)
                 agent.group_dict.update({"university": 0})
         
@@ -772,7 +771,7 @@ class Sim:
                 mean  = np.log(par1**2 / np.sqrt(par2 + par1**2)) # Computes the mean of the underlying normal distribution
                 sigma = np.sqrt(np.log(par2/par1**2 + 1)) # Computes sigma for the underlying normal distribution
                 
-                value = np.random.lognormal(mean, sigma) * self.n_ticks_per_hour * self.n_hours_per_day
+                value = np.random.lognormal(mean, sigma) * self.n_ticks_per_day
                 return value
         
         # duration of different stages of infection as parameters (m, sd) of a log-normal distribution
@@ -783,7 +782,6 @@ class Sim:
             agent.duration_i = get_value_from_lognormal_dist(lndp["i"][0], lndp["i"][1]) 
             agent.duration_r_a = get_value_from_lognormal_dist(lndp["r_a"][0], lndp["r_a"][1])
             agent.duration_r_m = get_value_from_lognormal_dist(lndp["r_m"][0], lndp["r_m"][1]) 
-            
         
             # age-related probabilities of developing symptoms after an infection
             if agent.age in range(0,10):
@@ -812,10 +810,8 @@ class Sim:
         
         new_cases = 0
         cumulative_cases = 0
-        
         new_cases_age = 0
         cumulative_cases_age = 0
-        
         n_inf_age_0_29 = 0
         n_inf_age_30_59 = 0
         n_inf_age_60 = 0        
@@ -861,6 +857,7 @@ class Sim:
             }
         output_data.append(todays_infection_data)
         
+        # reset daily case numbers
         new_cases = 0
         new_cases_age = 0
         

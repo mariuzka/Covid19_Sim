@@ -6,7 +6,7 @@ Created on Mon Aug 31 17:20:04 2020
 @author: ac135963
 """
 
-from build_simulation import *
+from Sim import *
 from matplotlib import pyplot as plt
 import seaborn as sns
 import time
@@ -72,7 +72,7 @@ def run_simulation_experiment(
          timetable[0],
          n_ticks_to_quarantine,
          n_internal_runs,
-         timetable[1] + "_" + str(state) + "_5",
+         timetable[1] + "_" + str(state), # name of scenario/run
          save_output,
          display_simulation,
         ] for timetable in timetables]
