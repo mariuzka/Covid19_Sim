@@ -1090,11 +1090,9 @@ class Sim:
                                 # if agent is a worker
                                 if agent.work_hours_day_in_ticks > 0:
                                     
-                                    
                                     assert 0 <= self.wfh_data[current_measures["wfh"]][agent.nace2] <= 1
                                     assert 0 <= self.nace2_lockdown_data[current_measures["nace2_lockdown"]][agent.nace2_short] <= 1
                                     assert 0 <= self.nace2_short_reduction_of_workhours[current_measures["nace2_reduction_of_workhours"]][agent.nace2_short] <= 1
-                                    
                                     
                                     # "work at home" if "homeoffice" or "closure of workplace" or "work at home"
                                     if (    # homeoffice?

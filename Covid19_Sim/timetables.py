@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Sep 23 17:10:17 2020
-
-@author: ac135963
-"""
 
 import datetime as dt
 
@@ -13,7 +8,6 @@ CLOSED = 0
 KITA_PHASE_1 = 0.1
 KITA_PHASE_2 = 0.3
 KITA_PHASE_3 = 0.6
-KITA_PHASE_4 = 1
 
 UNIVERSITY_PHASE_1 = 0.1
 
@@ -21,14 +15,6 @@ SCHOOL_PHASE_1 = 0.1
 SCHOOL_PHASE_2 = 0.3
 SCHOOL_PHASE_3 = 0.6
 
-BW_SCHOOL_PHASE_1 = 0.3
-BW_SCHOOL_PHASE_3 = 0.75
-BW_SCHOOL_PHASE_4 = 1
-
-HESSEN_SCHOOL_PHASE_1 = 0.25
-HESSEN_SCHOOL_PHASE_2 = 0.5
-HESSEN_SCHOOL_PHASE_3 = 0.25
-HESSEN_SCHOOL_PHASE_4 = 1
 
 # Pfingstferien Bayern 02.06. - 13.06.
 # Sommerferien Bayern 27.07. - 07.09.

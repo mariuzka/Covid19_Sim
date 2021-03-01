@@ -8,13 +8,13 @@ from Cell import *
 
 
 
-########################################################################################################################
-
+###############################################################################
 # agent class
-
-########################################################################################################################
+###############################################################################
 
 class Corona_Agent(Agent):
+    
+    """This class defines the agents that live in the simulation."""
     
     max_agents_on_cell = int
     moving_prob = float
@@ -22,47 +22,82 @@ class Corona_Agent(Agent):
     def __init__(self):
 
         Agent.__init__(self)
-
+        
+        # gender
         self.gender = int
+        
+        # age
         self.age = int
-        self.infection = "s"                    # SEIR-state
-
-        self.tick_of_infection = 0              # Tick der Infektion
-        self.infection_duration_in_ticks = int
+        
+        # SEIR-state
+        self.infection = "s"                    
+        
+        # time step when infection happened
+        self.tick_of_exposure = None             
+        
+        # time step when agent was cured
         self.tick_of_recovery = int
+        
+        # time step of (A-)Symptomaticity
+        self.tick_of_symptom_onset = None
+        
+        # where the agent lives
+        self.home_cell = Corona_Cell                 
+        
+        # other locations
+        self.work_place = None                  
+        self.school = None                      
+        self.kindergarten = None                
+        self.fav_supermarkets = []
 
-        self.cell_of_infection = None           # Zelle, auf der sich der Agent angesteckt hat (wird bei Infektion eingespeichert)
-
-        self.target_cells = []                  # Zielzellen, zu der sich der Agent bewegen soll (meistens eine, außer beim Ausweichen)
-        self.target_cell = None
-
-        self.home_cell = Corona_Cell            # Zelle, auf der der Agent wohnt und immer wieder zurückkehrt
-
-        self.activity = None                    # Bezeichnung (String) der aktuellen Aktivität. Wenn zu Hause, dann None.
-
-        self.work_place = None                  # eine Zelle, die die Arbeitsstelle ist
-        self.school = None                      # eine Zelle, die die Schule ist
-        self.kindergarten = None                # a cell representing the agent's kindergarten
-
-        self.fav_supermarkets = []              # Zellen, die die Lieblingssupermärkte sind
-
-        self.ticks_doing_this_activity = None   # Anzahl der Ticks, die der Agent die aktuelle Aktivität bereits ausführt
-        self.activity_len_in_ticks = None       # Anzahl der Ticks, die der Agent die aktuelle Aktivität ausführen soll
-
+        # location where the infection happend
+        self.cell_of_infection = None          
+        
+        # temporary destinations during activities
+        self.target_cell = None           
+        
+        # name of activity the agent is doing
+        self.activity = None
+        
+        # planned execution time of activity in time steps
+        self.activity_len_in_ticks = None
+        
+        # time steps the agent has executed the activity so far
+        self.ticks_doing_this_activity = None
+        
+        # dictionary of rooms assigned to the agent in certain locations
+        # key = location; value = room
         self.group_dict = {"street": 0}
         
-        self.shopping_prob = float
-        self.go_for_a_walk_prob = float
-        
+        # list of activities an agent has done during the day
         self.activities_done_today = []
         
+        # Does the agent leave the house?
         self.stay_at_home = False
+        
+        # Is the agent in quarantine?
         self.quarantine = False
+        
+        # list of agents living with the agent
         self.household_members = []
+        
+        # time spans of stages of infections (in ticks)
+        self.duration_s = None 
+        self.duration_i = None 
+        self.duration_r_a = None 
+        self.duration_r_m = None 
+        
         
         
 
     def infect(self, tick, location_dependend_infection_prob_dict):
+        
+        """
+        Models the potential tranmission of the virus.
+        If this agent is infectious, it randomly chooses another agent that is
+        currently in the same room at the same location and infects the chosen agent
+        by a certain probability.
+        """
 
         # if agent is in any infectious state and if the agent is not the only one on his cell
         if self.infection in ["i", "a", "m"] and len(self.residence_cell.dict_of_residents) > 1:
@@ -82,18 +117,26 @@ class Corona_Agent(Agent):
                 # pick one agent at random
                 random_agent = random.choice(agents_in_my_group)
                 
-                # if the chosen agent is susbepicable
+                # if the chosen agent is susceptible
                 if random_agent.infection == "s":
                     
                     # expose the selected agent with a certain probability
                     if random.random() < location_dependend_infection_prob_dict[location]:
                         random_agent.infection = "e"
-                        random_agent.tick_of_infection = tick
                         random_agent.tick_of_exposure = tick
                         random_agent.cell_of_infection = self.residence_cell
                 
                 
     def update_status_of_infection(self, tick):
+        
+        """
+        Updates the status on infection each tick.
+        Changes the status on infection
+        from exposed (e) 
+        to infectious (i)
+        to symptomatic infectius (m) or asymptomatic infectious (a)
+        to recovered (r).
+        """
         
         # if agent has been exposed but is not yet infectious
         if self.infection == "e":
@@ -134,7 +177,7 @@ class Corona_Agent(Agent):
     
     def decide_to_stay_at_home(self, tick, ticks_to_staying_at_home):
         """
-        If an Agent has developed symptoms, he decides to stay at home after
+        If an Agent has developed symptoms, it decides to stay at home after
         a given time span has passed since the onset of the symptoms. 
         It models the common behavior of people to stay at home when not feeling well.
         """
@@ -143,7 +186,6 @@ class Corona_Agent(Agent):
         if self.infection in ["m"]:
             
             # wait until the number of ticks since symptom onset is higher than "ticks_to_staying_at_home"
-            # could be 
             if tick - self.tick_of_symptom_onset >= ticks_to_staying_at_home:
                 self.stay_at_home = True
         
@@ -155,7 +197,8 @@ class Corona_Agent(Agent):
     
     def decide_to_isolate_household(self, tick, ticks_to_isolate_household):
         """
-        
+        If an agent has symptoms for a while, the whole household gets isolated.
+        If an agent is in quarantine, it stays at home for 14 days.
         """
         # if one has symptoms and is not yet in quarantine
         if self.infection in ["m"] and not self.quarantine:
@@ -184,25 +227,16 @@ class Corona_Agent(Agent):
 
     def initialize_activity(
             self,
-            name_of_activity,       # Bezeichnung der Aktivität (String)
-            target_cell,            # Zielzelle, an der die Aktivität ausgeführt wird
-            activity_len_in_ticks,  # Die Aktivität wird solange an der Zielzelle ausgeführt
-            overwrite = False,      # Wenn False, dann wird diese Aktivität ignoriert und die aktuelle einfach weitergeführt
-                                    # Wenn der Agent zu Hause ist, dann ist die Aktivität auf "None" d.h. er kann neue
-                                    # Aktivitäten empfangen
-                                    # Wenn True, dann werden aktuelle Aktivitäten abgebrochen, egal ob der Agent zu Hause
-                                    # ist oder nicht, und durch diese ersetzt
+            name_of_activity,       
+            target_cell,            
+            activity_len_in_ticks,  
+            overwrite = False,
 
     ):
-        """
-        Initialisiert eine Aktivität. Mit der Funktion "do_acitivity" wird diese Aktivität bis der Agent wieder zu Hause ist,
-        ausgeführt.
-        Diese Funktion kann beispielsweise um eine gewisse Uhrzeit die Aktivität "Arbeit" initialisieren, welche dann
-        in der folgenden Zeit von der Funktion "do_acitivity" ausgeführt wird.
-        """
+        """Initializes an activity."""
         
+        # if the agent is doing nothing or this activity is allowed to overwrite the current activity
         if (not self.activity) or overwrite:
-            
             self.activity = name_of_activity
             self.target_cell = target_cell
             self.activity_len_in_ticks = activity_len_in_ticks
@@ -219,33 +253,24 @@ class Corona_Agent(Agent):
             grid_as_matrix,
             torus,
     ):
-        """
-        Diese Funktion führt die initialisierte Aktivität aus. Die Trennung zwischen Initialisierung und Ausführung muss
-        sein, damit um eine gewisse Uhrzeit die Aktivität gestartet werden kann, aber unabhängig von der Uhrzeit die Aktivität
-        komplett ausgeführt werden kann.
+        """Executes the current activity."""
 
-        Das Ausführen der Aktivität besteht letztlich darin, zur angegeben Zielzelle zu gehen und sich dort für die
-        angegebene Zeit aufzuhalten.
-        """
-
-        # Wenn eine Aktivität initialisiert wurde
+        # if an activity is intialized
         if self.activity:
             
-            # Wenn die Zielzelle noch nicht erreicht wurde
+            # if the agent is not at the right location
             if self.target_cell:
+                # go to the location
                 self.move_to_this_cell(self.target_cell)
                 self.target_cell = None
              
-            # Wenn der Agent die maximale Ausführungszeit noch nicht überschritten hat
+            # if the planned execution time has not been reached
             if self.ticks_doing_this_activity < self.activity_len_in_ticks:
-
-                # Erhöhe die Zeit, die die Aktivität bereits ausgeführt wurde
                 self.ticks_doing_this_activity += 1
 
-            # Wenn die maximale Ausführungsdauer erreicht wurde
+            # if the planned execution time has been reached
             else:
-
-                # Aktivität abbrechen und nach Hause gehen
+                # stop the activity and go home
                 self.move_to_this_cell(self.home_cell)
                 self.activity = None
                 self.ticks_doing_this_activity = None
@@ -253,38 +278,42 @@ class Corona_Agent(Agent):
                     
                     
 
-
-########################################################################################################################
-
+###############################################################################
 # cell class
-
-########################################################################################################################
+###############################################################################
 
 class Corona_Cell(Cell):
+    
+    """The simulated world is a grid of cells. Each cell is a location where an agent can be."""
+    
     def __init__(self, x_grid_pos, y_grid_pos):
         Cell.__init__(self, x_grid_pos, y_grid_pos)
+        
+        # type of location
+        self.cell_type = "street"
+        
+        # Is there a building on the cell?
+        self.building = None
+        
+        # Can agents walk on this cell? (Does not matter because the modelling of walking has been removed.)
+        self.walkable = bool
+        
+        # number of agents use this cell as a location for activities
+        self.n_users = 0
+        
+        # number groups/rooms at this location
+        self.n_groups = 0 
+        
 
-        self.cell_type = "street"   # wenn ein Gebäude drauf gesetzt wird, dann wird der cell_type in den Gebäudetyp geändert
-        self.building = None        # the building the cell belongs
-        self.walkable = bool        # ob der Agent diese Zelle begehen kann/als Weg benutzen kann
-        self.cumulative_number_of_residents = 0
-
-        self.n_users = 0 # Anzahl der Bewohner/Schüler/Angestellte dieser Zelle
-        self.n_groups = 0 # Anzahl der Wohnungen/Klassen/Abteilungen dieser Zelle
-        self.groups = [[]] # Liste der Gruppen
-
-
-
-########################################################################################################################
-
+###############################################################################
 # building class
-
-########################################################################################################################
+###############################################################################
 
 class Building:
 
     """
-    Ein Gebäude besteht aus mehreren Zellen.
+    A building can be built on one or more cells. 
+    A building defines the location type of a cell.
     """
     def __init__(
             self,
@@ -292,10 +321,17 @@ class Building:
             n_cells_x_dim=1,
             n_cells_y_dim=1,
     ):
+        # type of building / location
         self.building_type = building_type
-        self.n_cells_x_dim = n_cells_x_dim  # Größe des Gebäudes / Anzahl der Zellen auf der x-Achse
-        self.n_cells_y_dim = n_cells_y_dim  # Größe des Gebäudes / Anzahl der Zellenauf der y-Achse
-        self.cells = []                     # Zellen, aus denen das Gebäude besteht
+        
+        # cell length on x-dimension
+        self.n_cells_x_dim = n_cells_x_dim  
+        
+        # cell length on y-dimension
+        self.n_cells_y_dim = n_cells_y_dim
+        
+        # cells occupied by the building
+        self.cells = []                    
 
 
     def build_it(
@@ -305,28 +341,18 @@ class Building:
             grid_as_matrix,
 
     ):
-        """
-        Baut das Gebäude auf einer bestimmten Position auf dem Grid.
-        Der Gebäude-Origin ist dabei die linke obere Ecke des Gebäudes.
-        """
+        """Builds the building on cells on the grid."""
+        
+        # for each cell of the building ground
         for y in range(building_y_origin, building_y_origin + self.n_cells_y_dim):
             for x in range(building_x_origin, building_x_origin + self.n_cells_x_dim):
 
-                # Gebäude-Typ der Zelle deklarieren
+                # build the building on cell
+                grid_as_matrix[y][x].walkable = False
+                grid_as_matrix[y][x].building = self
                 grid_as_matrix[y][x].cell_type = self.building_type
 
-                # Zelle unbegehbar machen
-                grid_as_matrix[y][x].walkable = False
-
-                # Konkretes Gebäude bei der Zelle einspeichern
-                grid_as_matrix[y][x].building = self
-
-                # Zelle als Bestandteil/Zelle beim Gebäude hinzufügen
                 self.cells.append(grid_as_matrix[y][x])
-
-        # den bebauten Zellen den Gebäudetyp einspeichern
-        for cell in self.cells:
-            cell.cell_type = self.building_type
 
 
     def build_it_on_random_position(
@@ -334,6 +360,9 @@ class Building:
             grid_as_flat_list,
             grid_as_matrix,
     ):
+        
+        """Builds the building on a random vacant position on the grid."""
+        
         vacant_ground = [cell
                          for cell in grid_as_flat_list
                          if cell.cell_type == "street"]
